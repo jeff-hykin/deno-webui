@@ -1,123 +1,92 @@
 // FFI (Foreign Function Interface) for webui.ts
 
-import {
-  webuiLinuxClangX64,
-  webuiLinuxGccAarch64,
-  webuiLinuxGccArm,
-  webuiLinuxGccX64,
-  webuiMacosClangArm64,
-  webuiMacosClangX64,
-  webuiWindowsGccX64,
-  webuiWindowsMsvcX64,
-} from "../deps.ts";
-import { b64ToBuffer, writeLib } from "./utils.ts";
-export function loadLib(
-  { libPath, clearCache }: { libPath?: string; clearCache: boolean },
-) {
-  // Determine the library name based
-  // on the current operating system
-  const libName = (() => {
-    let fileName = "";
-    switch (Deno.build.os) {
-      case "windows":
-        switch (Deno.build.arch) {
-          case "x86_64":
-            fileName = "webui-windows-msvc-x64/webui-2.dll";
-            break;
-          default:
+import { FileSystem, glob } from "https://deno.land/x/quickr@0.6.51/main/file_system.js"
+
+import uint8ArrayForLinuxClangX64So      from "../dlibs/linux-clang-x64.so.binaryified.js"
+// import uint8ArrayForLinuxGccAarch64So    from "../dlibs/linux-gcc-aarch64.so.binaryified.js"
+// import uint8ArrayForLinuxGccArm64So      from "../dlibs/linux-gcc-arm64.so.binaryified.js"
+import uint8ArrayForLinuxGccArmSo        from "../dlibs/linux-gcc-arm.so.binaryified.js"
+// import uint8ArrayForLinuxGccX64So        from "../dlibs/linux-gcc-x64.so.binaryified.js"
+import uint8ArrayForMacosClangArm64Dylib from "../dlibs/macos-clang-arm64.dylib.binaryified.js"
+import uint8ArrayForMacosClangX64Dylib   from "../dlibs/macos-clang-x64.dylib.binaryified.js"
+// import uint8ArrayForWindowsGccX64Dll     from "../dlibs/windows-gcc-x64.dll.binaryified.js"
+import uint8ArrayForWindowsMsvcX64Dll    from "../dlibs/windows-msvc-x64.dll.binaryified.js"
+
+const libNameToBytes = {
+    "linux-clang-x64.so": uint8ArrayForLinuxClangX64So,
+    // "linux-gcc-aarch64.so": uint8ArrayForLinuxGccAarch64So,
+    // "linux-gcc-arm64.so": uint8ArrayForLinuxGccArm64So,
+    "linux-gcc-arm.so": uint8ArrayForLinuxGccArmSo,
+    // "linux-gcc-x64.so": uint8ArrayForLinuxGccX64So,
+    "macos-clang-arm64.dylib": uint8ArrayForMacosClangArm64Dylib,
+    "macos-clang-x64.dylib": uint8ArrayForMacosClangX64Dylib,
+    // "windows-gcc-x64.dll": uint8ArrayForWindowsGccX64Dll,
+    "windows-msvc-x64.dll": uint8ArrayForWindowsMsvcX64Dll,
+}
+
+let defaultDynmaicLibName
+switch (Deno.build.os) {
+  case "windows":
+      switch (Deno.build.arch) {
+        case "x86_64":
+            defaultDynmaicLibName = "windows-msvc-x64.dll";
+            break
+        default:
             throw new Error(
               `Unsupported architecture ${Deno.build.arch} for Windows`,
             );
-        }
-        break;
-      case "darwin":
-        switch (Deno.build.arch) {
-          case "x86_64":
-            fileName = "webui-macos-clang-x64/webui-2.dylib";
-            break;
-          // case "arm64":
-          //   fileName = "webui-macos-clang-arm64/webui-2.dylib";
-          //   break;
-          case "aarch64":
-            fileName = "webui-macos-clang-arm64/webui-2.dylib";
-            break;
-          default:
+      }
+      break
+  case "darwin":
+      switch (Deno.build.arch) {
+        case "x86_64":
+            defaultDynmaicLibName = "macos-clang-x64.dylib";
+            break
+        case "aarch64":
+            defaultDynmaicLibName = "macos-clang-arm64.dylib";
+            break
+        // case "arm64":
+        //   defaultDynmaicLibName = "macos-clang-arm64.dylib";
+        default:
             throw new Error(
               `Unsupported architecture ${Deno.build.arch} for Darwin`,
             );
-        }
-        break;
-      default:
-        // Assuming Linux for default
-        switch (Deno.build.arch) {
-          case "x86_64":
-            fileName = "webui-linux-gcc-x64/webui-2.so";
-            break;
-          // case "arm":
-          //   fileName = "webui-linux-gcc-arm/webui-2.so";
-          //   break;
-          case "aarch64":
-            fileName = "webui-linux-gcc-aarch64/webui-2.so";
-            break;
-          default:
+      }
+      break
+  default:
+      // Assuming Linux for default
+      switch (Deno.build.arch) {
+        case "x86_64":
+            defaultDynmaicLibName = "linux-clang-x64.so";
+            break
+        // case "arm":
+        //   defaultDynmaicLibName = "linux-gcc-arm.so";
+        case "aarch64":
+            defaultDynmaicLibName = "linux-gcc-arm.so";
+            break
+        default:
             throw new Error(
               `Unsupported architecture ${Deno.build.arch} for Linux`,
             );
-        }
-        break;
-    }
-    return fileName;
-  })();
-
-  const libBuffer = (() => {
-    if (libPath === undefined) {
-      switch (Deno.build.os) {
-        case "windows":
-          switch (Deno.build.arch) {
-            case "x86_64":
-              return b64ToBuffer(webuiWindowsMsvcX64.b64);
-            default:
-              throw new Error(
-                `Unsupported architecture ${Deno.build.arch} for Windows`,
-              );
-          }
-        case "darwin":
-          switch (Deno.build.arch) {
-            case "x86_64":
-              return b64ToBuffer(webuiMacosClangX64.b64);
-            case "aarch64":
-              return b64ToBuffer(webuiMacosClangArm64.b64);
-            // case "arm64":
-            //   return b64ToBuffer(webuiMacosClangArm64.b64);
-            default:
-              throw new Error(
-                `Unsupported architecture ${Deno.build.arch} for Darwin`,
-              );
-          }
-        default:
-          // Assuming Linux for default
-          switch (Deno.build.arch) {
-            case "x86_64":
-              return b64ToBuffer(webuiLinuxGccX64.b64);
-            // case "arm":
-            //   return b64ToBuffer(webuiLinuxGccArm.b64);
-            case "aarch64":
-              return b64ToBuffer(webuiLinuxGccArm.b64);
-            default:
-              throw new Error(
-                `Unsupported architecture ${Deno.build.arch} for Linux`,
-              );
-          }
       }
-    }
-    return new Uint8Array();
-  })();
+}
 
+export function loadLib(
+  { libPath, clearCache }: { libPath?: string; clearCache: boolean },
+) {
   // Use user defined lib or cached one
-  const libFullPath = libPath ?? writeLib(libName, libBuffer, clearCache);
-
+  if (!libPath) {
+    libPath = `${FileSystem.thisFolder}/dyamic_libraries/${defaultDynmaicLibName}`
+    if (!FileSystem.sync.info(libPath).isFile) {
+        FileSystem.sync.write({
+            path: libPath,
+            data: libNameToBytes[defaultDynmaicLibName],
+        })
+    }
+  }
+  
   return Deno.dlopen(
-    libFullPath,
+    libPath,
     {
       webui_wait: {
         // void webui_wait(void)
