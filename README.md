@@ -27,42 +27,29 @@ is written in Deno using WebUI as the GUI library.
 
 ![ScreenShot](img/webui_deno_example.png)
 
-## Installation
-
-`import { WebUI } from "https://deno.land/x/webui/mod.ts";`
-
 ## Minimal Example
 
 ```js
-import { WebUI } from "https://deno.land/x/webui/mod.ts";
+import { WebUI } from "https://raw.githubusercontent.com/jeff-hykin/deno-webui/master/mod.ts";
 
 const myWindow = new WebUI();
 myWindow.show("<html>Hello World</html>");
 await WebUI.wait();
 ```
 
-_MacOS ARM_: To get deno-webui working with an Apple Silicon Mac, you'll need to build [WebUI](https://github.com/webui-dev/webui) your self then pass the path to your dylib:
-
-```js
-const myWindow = new WebUI({
-  libPath: "/path/to/webui-2.dylib",
-  clearCache: false,
-});
-```
-
 ## Repository Examples
 
 - Hello world example:
   ```sh
-  deno run -A --unstable https://deno.land/x/webui/examples/hello_world/hello_world.ts
+  deno run -A --unstable https://raw.githubusercontent.com/jeff-hykin/deno-webui/master/examples/hello_world/hello_world.ts
   ```
 - Manage multi windows:
   ```sh
-  deno run -A --unstable https://deno.land/x/webui/examples/multi_windows/main.ts
+  deno run -A --unstable https://raw.githubusercontent.com/jeff-hykin/deno-webui/master/examples/multi_windows/main.ts
   ```
 - Browse your local filesystem
   ```sh
-  deno run -A --unstable https://deno.land/x/webui/examples/file_explorer/main.ts
+  deno run -A --unstable https://raw.githubusercontent.com/jeff-hykin/deno-webui/master/examples/file_explorer/main.ts
   ```
 
 [More examples](https://github.com/webui-dev/deno-webui/tree/main/examples)
@@ -82,7 +69,7 @@ Minimal required flags for running the module are:
 Example:
 
 ```sh
-deno run --unstable --allow-env=HOME --allow-ffi --allow-read=~/.deno_webui --allow-write=~/.deno_webui https://deno.land/x/webui/examples/hello_world/hello_world.ts
+deno run --unstable --allow-env=HOME --allow-ffi --allow-read=~/.deno_webui --allow-write=~/.deno_webui https://raw.githubusercontent.com/jeff-hykin/deno-webui/master/examples/hello_world/hello_world.ts
 ```
 
 You can see all permissions prompt by using `deno run` without any.
