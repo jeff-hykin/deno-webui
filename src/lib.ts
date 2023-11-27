@@ -2,28 +2,6 @@
 
 import { FileSystem, glob } from "https://deno.land/x/quickr@0.6.51/main/file_system.js"
 
-import uint8ArrayForLinuxClangX64So      from "../dlibs/linux-clang-x64.so.binaryified.js"
-// import uint8ArrayForLinuxGccAarch64So    from "../dlibs/linux-gcc-aarch64.so.binaryified.js"
-// import uint8ArrayForLinuxGccArm64So      from "../dlibs/linux-gcc-arm64.so.binaryified.js"
-import uint8ArrayForLinuxGccArmSo        from "../dlibs/linux-gcc-arm.so.binaryified.js"
-// import uint8ArrayForLinuxGccX64So        from "../dlibs/linux-gcc-x64.so.binaryified.js"
-import uint8ArrayForMacosClangArm64Dylib from "../dlibs/macos-clang-arm64.dylib.binaryified.js"
-import uint8ArrayForMacosClangX64Dylib   from "../dlibs/macos-clang-x64.dylib.binaryified.js"
-// import uint8ArrayForWindowsGccX64Dll     from "../dlibs/windows-gcc-x64.dll.binaryified.js"
-import uint8ArrayForWindowsMsvcX64Dll    from "../dlibs/windows-msvc-x64.dll.binaryified.js"
-
-const libNameToBytes = {
-    "linux-clang-x64.so": uint8ArrayForLinuxClangX64So,
-    // "linux-gcc-aarch64.so": uint8ArrayForLinuxGccAarch64So,
-    // "linux-gcc-arm64.so": uint8ArrayForLinuxGccArm64So,
-    "linux-gcc-arm.so": uint8ArrayForLinuxGccArmSo,
-    // "linux-gcc-x64.so": uint8ArrayForLinuxGccX64So,
-    "macos-clang-arm64.dylib": uint8ArrayForMacosClangArm64Dylib,
-    "macos-clang-x64.dylib": uint8ArrayForMacosClangX64Dylib,
-    // "windows-gcc-x64.dll": uint8ArrayForWindowsGccX64Dll,
-    "windows-msvc-x64.dll": uint8ArrayForWindowsMsvcX64Dll,
-}
-
 let defaultDynmaicLibName
 switch (Deno.build.os) {
   case "windows":
@@ -71,6 +49,20 @@ switch (Deno.build.os) {
       }
 }
 
+import uint8ArrayForLinuxClangX64So      from "../dlibs/linux-clang-x64.so.binaryified.js"
+import uint8ArrayForLinuxGccArmSo        from "../dlibs/linux-gcc-arm.so.binaryified.js"
+import uint8ArrayForMacosClangArm64Dylib from "../dlibs/macos-clang-arm64.dylib.binaryified.js"
+import uint8ArrayForMacosClangX64Dylib   from "../dlibs/macos-clang-x64.dylib.binaryified.js"
+import uint8ArrayForWindowsMsvcX64Dll    from "../dlibs/windows-msvc-x64.dll.binaryified.js"
+
+const libBytes = await ({
+    "linux-clang-x64.so": uint8ArrayForLinuxClangX64So,
+    "linux-gcc-arm.so": uint8ArrayForLinuxGccArmSo,
+    "macos-clang-arm64.dylib": uint8ArrayForMacosClangArm64Dylib,
+    "macos-clang-x64.dylib": uint8ArrayForMacosClangX64Dylib,
+    "windows-msvc-x64.dll": uint8ArrayForWindowsMsvcX64Dll,
+})[defaultDynmaicLibName]
+
 export function loadLib(
   { libPath, clearCache }: { libPath?: string; clearCache: boolean },
 ) {
@@ -80,7 +72,7 @@ export function loadLib(
     if (!FileSystem.sync.info(libPath).isFile) {
         FileSystem.sync.write({
             path: libPath,
-            data: libNameToBytes[defaultDynmaicLibName],
+            data: libBytes,
         })
     }
   }
